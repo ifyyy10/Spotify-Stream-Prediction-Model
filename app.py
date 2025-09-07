@@ -53,57 +53,41 @@
 #     st.success(f"🎶 Predicted Streams: {int(prediction):,}")
 
 
+
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
+import cloudpickle
 
-# Load saved model (Pipeline)
-model = joblib.load("best_model.pkl")
+# Load the saved model
+with open("best_model.pkl", "rb") as f:
+    model = cloudpickle.load(f)
 
-st.title("🎵 Music Streams Prediction App")
-st.write("Predict the number of streams for a track based on its features.")
+st.title("🎵 Spotify Stream Prediction App")
 
-# Get expected features from the trained model
-try:
-    expected_features = model.feature_names_in_
-except AttributeError:
-    st.error("❌ Model does not have 'feature_names_in_'. Check your training pipeline.")
-    st.stop()
+# Example UI
+st.write("Fill in the track details below to predict streams:")
 
-# Dictionary for user inputs
-user_inputs = {}
+# Input widgets (example subset)
+acousticness = st.slider("Acousticness (%)", 0.0, 100.0, 50.0)
+danceability = st.slider("Danceability (%)", 0.0, 100.0, 50.0)
+energy = st.slider("Energy (%)", 0.0, 100.0, 50.0)
+key = st.selectbox("Key", options=list(range(0, 12)))
+mode = st.selectbox("Mode", options=[0, 1])
+tempo = st.selectbox("Tempo", options=["Fast", "Medium", "Slow"])  # depends on encoding
 
-# Collect inputs dynamically based on features
-for feature in expected_features:
-    if "year" in feature.lower():
-        user_inputs[feature] = st.number_input("Released Year", min_value=1900, max_value=2100, value=2023)
-    elif "month" in feature.lower():
-        user_inputs[feature] = st.number_input("Released Month", min_value=1, max_value=12, value=6)
-    elif "day" in feature.lower():
-        user_inputs[feature] = st.number_input("Released Day", min_value=1, max_value=31, value=15)
-    elif "artist_count" in feature.lower():
-        user_inputs[feature] = st.number_input("Artist Count", min_value=1, value=1)
-    elif "bpm" in feature.lower():
-        user_inputs[feature] = st.number_input("Tempo (BPM)", min_value=40, max_value=250, value=120)
-    elif "music_tempo" in feature.lower():
-        user_inputs[feature] = st.selectbox("Music Tempo", ["Medium", "Fast", "Slow"])
-    elif feature == "key":
-        user_inputs[feature] = st.selectbox("Key", ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"])
-    elif feature == "mode":
-        user_inputs[feature] = st.selectbox("Mode", ["Major", "Minor"])
-    elif "%" in feature.lower():
-        user_inputs[feature] = st.slider(feature, 0, 100, 50)
-    else:
-        user_inputs[feature] = st.text_input(feature, "")
-
-# Convert to DataFrame with correct column order
-input_data = pd.DataFrame([[user_inputs[f] for f in expected_features]], columns=expected_features)
-
-# Predict button
 if st.button("Predict Streams"):
-    try:
-        prediction = model.predict(input_data)[0]
-        st.success(f"🎶 Predicted Streams: {int(prediction):,}")
-    except Exception as e:
-        st.error(f"❌ Prediction failed: {e}")
+    # Convert inputs into dataframe (must match training columns!)
+    input_df = pd.DataFrame([{
+        "acousticness_%": acousticness,
+        "danceability_%": danceability,
+        "energy_%": energy,
+        "key": key,
+        "mode": mode,
+        "music_tempo": tempo,
+        # add other required features...
+    }])
+
+    prediction = model.predict(input_df)[0]
+    st.success(f"🎶 Predicted Streams: {int(prediction):,}")
+
