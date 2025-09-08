@@ -1,6 +1,6 @@
 --only-binary=:all:
 
-streamlit
+streamlit==1.37.0
 scikit-learn==1.2.2
 pandas==2.0.3
 numpy==1.24.4
