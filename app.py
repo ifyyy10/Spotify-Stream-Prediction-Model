@@ -53,41 +53,102 @@
 #     st.success(f"🎶 Predicted Streams: {int(prediction):,}")
 
 
-
 import streamlit as st
 import pandas as pd
 import numpy as np
-import cloudpickle
+import skops.io as sio
 
-# Load the saved model
-with open("best_model.pkl", "rb") as f:
-    model = cloudpickle.load(f)
+# Load the trained model (skops version)
+@st.cache_resource
+def load_model():
+    return sio.load("best_model.skops", trusted=True)
 
-st.title("🎵 Spotify Stream Prediction App")
+model = load_model()
 
-# Example UI
-st.write("Fill in the track details below to predict streams:")
+# 🎵 Title
+st.title("🎶 Spotify Streams Prediction App")
 
-# Input widgets (example subset)
-acousticness = st.slider("Acousticness (%)", 0.0, 100.0, 50.0)
-danceability = st.slider("Danceability (%)", 0.0, 100.0, 50.0)
-energy = st.slider("Energy (%)", 0.0, 100.0, 50.0)
-key = st.selectbox("Key", options=list(range(0, 12)))
-mode = st.selectbox("Mode", options=[0, 1])
-tempo = st.selectbox("Tempo", options=["Fast", "Medium", "Slow"])  # depends on encoding
+st.markdown(
+    """
+    Upload or enter song features to predict the number of streams.
+    """
+)
 
-if st.button("Predict Streams"):
-    # Convert inputs into dataframe (must match training columns!)
-    input_df = pd.DataFrame([{
-        "acousticness_%": acousticness,
-        "danceability_%": danceability,
-        "energy_%": energy,
+# === Sidebar for Mode Selection ===
+mode = st.sidebar.radio("Choose Prediction Mode:", ["Single Prediction", "Batch Prediction (CSV)"])
+
+# === Single Prediction Mode ===
+if mode == "Single Prediction":
+    st.header("Enter Song Features")
+
+    # Numeric features
+    numeric_features = {
+        "acousticness_%": st.number_input("Acousticness %", 0.0, 100.0, 50.0),
+        "artist_count": st.number_input("Artist Count", 1, 10, 1),
+        "bpm": st.number_input("Beats Per Minute (BPM)", 40, 250, 120),
+        "danceability_%": st.number_input("Danceability %", 0.0, 100.0, 50.0),
+        "energy_%": st.number_input("Energy %", 0.0, 100.0, 50.0),
+        "in_apple_charts": st.number_input("In Apple Charts", 0, 2000, 0),
+        "in_apple_playlists": st.number_input("In Apple Playlists", 0, 2000, 0),
+        "in_deezer_charts": st.number_input("In Deezer Charts", 0, 2000, 0),
+        "in_deezer_playlists": st.number_input("In Deezer Playlists", 0, 2000, 0),
+        "in_shazam_charts": st.number_input("In Shazam Charts", 0, 2000, 0),
+        "in_spotify_charts": st.number_input("In Spotify Charts", 0, 2000, 0),
+        "in_spotify_playlists": st.number_input("In Spotify Playlists", 0, 2000, 0),
+        "instrumentalness_%": st.number_input("Instrumentalness %", 0.0, 100.0, 0.0),
+        "liveness_%": st.number_input("Liveness %", 0.0, 100.0, 50.0),
+        "released_day": st.number_input("Release Day", 1, 31, 1),
+        "released_month": st.number_input("Release Month", 1, 12, 1),
+        "released_year": st.number_input("Release Year", 1950, 2030, 2023),
+        "speechiness_%": st.number_input("Speechiness %", 0.0, 100.0, 50.0),
+        "valence_%": st.number_input("Valence %", 0.0, 100.0, 50.0),
+    }
+
+    # Categorical features
+    st.subheader("Categorical Features")
+    music_tempo = st.selectbox("Music Tempo", ["Slow", "Medium", "Fast"])
+    key = st.selectbox("Key", ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"])
+    mode_input = st.selectbox("Mode", ["Major", "Minor"])
+
+    # Prepare input
+    input_data = pd.DataFrame([{
+        **numeric_features,
+        "music_tempo": music_tempo,
         "key": key,
-        "mode": mode,
-        "music_tempo": tempo,
-        # add other required features...
+        "mode": mode_input
     }])
 
-    prediction = model.predict(input_df)[0]
-    st.success(f"🎶 Predicted Streams: {int(prediction):,}")
+    # Prediction button
+    if st.button("Predict Streams"):
+        prediction = model.predict(input_data)[0]
+        st.success(f"🎧 Predicted Streams: {int(prediction):,}")
 
+# === Batch Prediction Mode ===
+else:
+    st.header("Batch Prediction via CSV Upload")
+    st.markdown("Upload a CSV file with the same feature columns used in training.")
+
+    uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
+
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+
+        st.write("📊 Uploaded Data Preview:", df.head())
+
+        try:
+            predictions = model.predict(df)
+            df["Predicted_Streams"] = predictions.astype(int)
+
+            st.success("✅ Predictions generated successfully!")
+            st.write(df.head())
+
+            # Download option
+            csv_out = df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                label="📥 Download Predictions",
+                data=csv_out,
+                file_name="predicted_streams.csv",
+                mime="text/csv",
+            )
+        except Exception as e:
+            st.error(f"Error during prediction: {e}")
