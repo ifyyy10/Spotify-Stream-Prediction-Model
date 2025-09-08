@@ -61,7 +61,12 @@ import skops.io as sio
 # Load the trained model (skops version)
 @st.cache_resource
 def load_model():
-    return sio.load("best_model.skops", trusted=True)
+    # Step 1: Inspect untrusted types in the file
+    untrusted_types = sio.get_untrusted_types(file="best_model.skops")
+
+    # Step 2: Load the model, explicitly trusting these types
+    model = sio.load("best_model.skops", trusted=untrusted_types)
+    return model
 
 model = load_model()
 
