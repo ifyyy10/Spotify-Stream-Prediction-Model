@@ -127,11 +127,13 @@ pip install -r requirements.txt
 Dataset
 The analysis uses the "Top Spotify Songs 2023" dataset from Kaggle, containing 953 songs with 24 features including:
 
-Track metadata (name, artists, release date)
+Track metadata or Identification (name, artists, release date)
 
-Platform performance metrics (streams, playlist inclusions, chart positions)
+Release Information (released_year, released_month, released_day)
 
-Audio features (BPM, key, mode, danceability, energy, etc.)
+Platform performance metrics (in_spotify_playlists, in_spotify_charts, streams, in_apple_playlists, in_apple_charts, in_deezer_playlists, in_deezer_charts, in_shazam_charts)
+
+Audio features (bpm, key, mode, danceability, valence, energy, acousticness, instrumentalness, liveness, speechiness)
 
 
 Key Features
