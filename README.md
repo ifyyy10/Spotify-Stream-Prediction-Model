@@ -1,4 +1,4 @@
-**Spotify Data Analysis Project **
+#**Spotify Data Analysis Project**
  
 **Overview**
 This project performs comprehensive analysis and predictive modeling on Spotify's top songs dataset for 2023. The work includes data cleaning, exploratory data analysis (EDA), feature engineering, building machine learning models to predict song popularity, and a Streamlit web application for users to interact with the model.
