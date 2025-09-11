@@ -12,7 +12,7 @@ Loads the Spotify 2023 dataset with proper encoding handling
 
 Displays basic dataset information (shape, columns, data types)
 
-Shows the first few rows of data for initial inspection
+Shows the first few rows of data for initial inspection 
 
 
 2. Data Cleaning and Preprocessing
